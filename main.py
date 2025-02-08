@@ -12,6 +12,18 @@ class Bet:
     quantity: int
     value: int
 
+    def next_biggest_bet(self,max_value):
+        return Bet(self.quantity, self.value+1) if self.value < max_value else Bet(self.quantity+1, 1)
+
+    def increasing_bets(self,max_value,max_quantity):
+        bet = self
+        while True:
+            bet = bet.next_biggest_bet(max_value)
+            if bet.quantity > max_quantity:
+                return
+            yield bet
+
+
 def roll_dice(n_dice, n_sides):
     """
     Returns a list of quantities
@@ -34,6 +46,7 @@ def chance_correct(total_die, n_sides, known_quantities, bet):
     n_die_unknown = total_die - n_die_known
 
 
+
 def get_bet(n_players, n_sides, my_die, previous_bet: Bet):
     """
     Return most probable bet higher than previous bet
@@ -42,15 +55,24 @@ def get_bet(n_players, n_sides, my_die, previous_bet: Bet):
     print(f"My die are {my_die}")
     return Bet(0,0)
 
+    
+
 def main():
 
-    last_bet = Bet(0,0)
+    last_bet = Bet(1,0)
     player_die = [roll_dice(N_INITIAL_DICE,N_SIDE_PER_DICE) for _ in range(N_PLAYERS)]
     for i in range(10):
         player_ind = i % N_PLAYERS
         last_bet = get_bet(N_INITIAL_DICE,N_SIDE_PER_DICE,player_die[player_ind],last_bet)
         print(player_ind)
         print(last_bet)
+
+    
+
+    orig_bet = Bet(1,0)
+    print(len(list(orig_bet.increasing_bets(6,12))))
+    for bet in orig_bet.increasing_bets(6,12):
+        print(bet)
 
 
 def run_tests():
