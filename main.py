@@ -3,7 +3,11 @@ from dataclasses import dataclass
 import numpy as np
 import math
 import itertools
-from collections import deque
+from collections import deque, Counter
+
+import logging
+logger = logging.getLogger(__name__)
+
 
 N_PLAYERS = 3
 N_INITIAL_DICE = 4
@@ -79,7 +83,8 @@ def get_bet_least_pareto_aggressive(total_die, n_sides, my_die, previous_bet: Be
         while len(pareto_bets) > 0 and pareto_bets[-1][1] <= p:
             pareto_bets.pop()
         pareto_bets.append((next_bet,p))
-    print(pareto_bets)
+    for bet, p in pareto_bets:
+        logger.debug(f"{bet} {p}")
     return pareto_bets[0][0]
 
 def is_true(set_of_die, bet):
@@ -87,7 +92,7 @@ def is_true(set_of_die, bet):
         return True
     return set_of_die[bet.value-1] >= bet.quantity
 
-def main():
+def play_game():
 
     N_TOTAL_DIE = N_PLAYERS * N_INITIAL_DICE
 
@@ -96,16 +101,16 @@ def main():
     total_quantities = [sum(pd[i] for pd in player_die) for i in range(N_SIDE_PER_DICE)]
     player_ind = 0
     while True:
-        print(f"\nPlayer {player_ind} turn")
+        logger.debug(f"\nPlayer {player_ind} turn")
 
         prob_last_bet = chance_correct(N_TOTAL_DIE,N_SIDE_PER_DICE,player_die[player_ind],last_bet) if last_bet is not None else 1
-        print(f"Probability last bet is true: {prob_last_bet}")
+        logger.debug(f"Probability last bet is true: {prob_last_bet}")
         if prob_last_bet < 0.5:
-            print("Calling")
-            print(f"Actual counts: {total_quantities}")
+            logger.debug("Calling")
+            logger.debug(f"Actual counts: {total_quantities}")
             winner = (player_ind-1) % N_PLAYERS if is_true(total_quantities,last_bet) else player_ind
-            print(f"Player {winner} wins!")
-            return
+            logger.debug(f"Player {winner} wins!")
+            return winner
 
         last_bet = get_bet_least_pareto_aggressive(
             N_TOTAL_DIE,
@@ -113,10 +118,16 @@ def main():
             player_die[player_ind],
             last_bet
         )
-        print(player_die[player_ind])
-        print(f"Placing bet: {last_bet}")
+        logger.debug(player_die[player_ind])
+        logger.debug(f"Placing bet: {last_bet}")
 
         player_ind = (player_ind+1) % N_PLAYERS
+
+def main():
+    winners = [play_game() for _ in range(100)]
+    victory_counts = Counter(winners)
+    print(victory_counts)
+
 
 def run_tests():
     b1 = Bet(6,5)
@@ -138,5 +149,6 @@ def run_tests():
     assert(not is_true([0,0,0,0,0,1], Bet(1,1)))
 
 if __name__ == "__main__":
+    logging.basicConfig(level=logging.INFO)
     run_tests()
     main()
