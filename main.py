@@ -46,14 +46,13 @@ def chance_correct(total_die, n_sides, known_quantities, bet):
     n_die_unknown = total_die - n_die_known
 
 
-
-def get_bet(n_players, n_sides, my_die, previous_bet: Bet):
+def get_bet_next_highest(n_players, n_sides, my_die, previous_bet: Bet):
     """
     Return most probable bet higher than previous bet
     If multiple bets have same probability, use the most aggressive one
     """
     print(f"My die are {my_die}")
-    return Bet(0,0)
+    return previous_bet.next_biggest_bet(n_sides)
 
     
 
@@ -63,16 +62,13 @@ def main():
     player_die = [roll_dice(N_INITIAL_DICE,N_SIDE_PER_DICE) for _ in range(N_PLAYERS)]
     for i in range(10):
         player_ind = i % N_PLAYERS
-        last_bet = get_bet(N_INITIAL_DICE,N_SIDE_PER_DICE,player_die[player_ind],last_bet)
+        last_bet = get_bet_next_highest(N_INITIAL_DICE,N_SIDE_PER_DICE,player_die[player_ind],last_bet)
         print(player_ind)
         print(last_bet)
 
     
 
-    orig_bet = Bet(1,0)
-    print(len(list(orig_bet.increasing_bets(6,12))))
-    for bet in orig_bet.increasing_bets(6,12):
-        print(bet)
+    
 
 
 def run_tests():
@@ -80,15 +76,15 @@ def run_tests():
     b2 = Bet(5,6)
     assert(b1>b2)
 
+    tol = 0.01
     p = exactly_n_rolls(12, 6, 3)
-    print(p)
-    assert(p>0)
-    assert(p<1)
+    assert(np.abs(p-0.19739571242092258)<tol)
 
     p = at_least_n_rolls(12, 6, 3)
-    print(p)
-    assert(p>0)
-    assert(p<1)
+    assert(np.abs(p-0.3225738051009249)<tol)
+
+    orig_bet = Bet(1,0)
+    assert len(list(orig_bet.increasing_bets(6,12))) == 72
 
 if __name__ == "__main__":
     run_tests()
