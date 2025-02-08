@@ -95,13 +95,21 @@ def is_true(set_of_die, bet):
 def play_game():
 
     N_TOTAL_DIE = N_PLAYERS * N_INITIAL_DICE
+    player_names = ["Pareto","NextBiggest1","NextBiggest2"]
+    strategies = {
+        "Pareto": get_bet_least_pareto_aggressive,
+        "NextBiggest1": get_bet_next_highest,
+        "NextBiggest2": get_bet_next_highest,
+    }
+    random.shuffle(player_names)
 
     last_bet = None
     player_die = [roll_dice(N_INITIAL_DICE,N_SIDE_PER_DICE) for _ in range(N_PLAYERS)]
     total_quantities = [sum(pd[i] for pd in player_die) for i in range(N_SIDE_PER_DICE)]
     player_ind = 0
     while True:
-        logger.debug(f"\nPlayer {player_ind} turn")
+        current_player = player_names[player_ind]
+        logger.debug(f"\nPlayer {current_player} turn")
 
         prob_last_bet = chance_correct(N_TOTAL_DIE,N_SIDE_PER_DICE,player_die[player_ind],last_bet) if last_bet is not None else 1
         logger.debug(f"Probability last bet is true: {prob_last_bet}")
@@ -109,10 +117,10 @@ def play_game():
             logger.debug("Calling")
             logger.debug(f"Actual counts: {total_quantities}")
             winner = (player_ind-1) % N_PLAYERS if is_true(total_quantities,last_bet) else player_ind
-            logger.debug(f"Player {winner} wins!")
-            return winner
+            logger.debug(f"Player {player_names[winner]} wins!")
+            return player_names[winner]
 
-        last_bet = get_bet_least_pareto_aggressive(
+        last_bet = strategies[current_player](
             N_TOTAL_DIE,
             N_SIDE_PER_DICE,
             player_die[player_ind],
@@ -124,7 +132,8 @@ def play_game():
         player_ind = (player_ind+1) % N_PLAYERS
 
 def main():
-    winners = [play_game() for _ in range(100)]
+    logging.basicConfig(level=logging.INFO)
+    winners = [play_game() for _ in range(1000)]
     victory_counts = Counter(winners)
     print(victory_counts)
 
@@ -149,6 +158,5 @@ def run_tests():
     assert(not is_true([0,0,0,0,0,1], Bet(1,1)))
 
 if __name__ == "__main__":
-    logging.basicConfig(level=logging.INFO)
     run_tests()
     main()
