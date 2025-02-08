@@ -3,6 +3,7 @@ from dataclasses import dataclass
 import numpy as np
 import math
 import itertools
+from collections import deque
 
 N_PLAYERS = 3
 N_INITIAL_DICE = 4
@@ -55,7 +56,7 @@ def chance_correct(total_die, n_sides, known_quantities, bet):
     return at_least_n_rolls(n_die_unknown,n_sides,n_matches_needed)
 
 
-def get_bet_next_highest(n_players, n_sides, my_die, previous_bet: Bet):
+def get_bet_next_highest(total_die, n_sides, my_die, previous_bet: Bet):
     """
     Dumbest next bet possible
     """
@@ -63,12 +64,23 @@ def get_bet_next_highest(n_players, n_sides, my_die, previous_bet: Bet):
         return Bet(1,1)
     return previous_bet.next_biggest_bet(n_sides)
 
-def get_bet_least_pareto_aggressive(n_players, n_sides, my_die, previous_bet: Bet):
+def get_bet_least_pareto_aggressive(total_die, n_sides, my_die, previous_bet: Bet):
     """
     Return most probable bet higher than previous bet
     If multiple bets have same probability, use the most aggressive one
     """
-    return previous_bet.next_biggest_bet(n_sides)
+    if previous_bet is None:
+        previous_bet = Bet(0,n_sides+1)
+
+    # While next bet is more probable than previous bet in the stack
+    pareto_bets = deque()
+    for next_bet in previous_bet.increasing_bets(n_sides,total_die):
+        p = chance_correct(total_die, n_sides, my_die, next_bet)
+        while len(pareto_bets) > 0 and pareto_bets[-1][1] <= p:
+            pareto_bets.pop()
+        pareto_bets.append((next_bet,p))
+    print(pareto_bets)
+    return pareto_bets[0][0]
 
 def is_true(set_of_die, bet):
     if bet is None:
@@ -84,7 +96,6 @@ def main():
     total_quantities = [sum(pd[i] for pd in player_die) for i in range(N_SIDE_PER_DICE)]
     player_ind = 0
     while True:
-        player_ind = (player_ind+1) % N_PLAYERS
         print(f"\nPlayer {player_ind} turn")
 
         prob_last_bet = chance_correct(N_TOTAL_DIE,N_SIDE_PER_DICE,player_die[player_ind],last_bet) if last_bet is not None else 1
@@ -96,14 +107,16 @@ def main():
             print(f"Player {winner} wins!")
             return
 
-        last_bet = get_bet_next_highest(N_INITIAL_DICE,N_SIDE_PER_DICE,player_die[player_ind],last_bet)
+        last_bet = get_bet_least_pareto_aggressive(
+            N_TOTAL_DIE,
+            N_SIDE_PER_DICE,
+            player_die[player_ind],
+            last_bet
+        )
         print(player_die[player_ind])
         print(f"Placing bet: {last_bet}")
 
-    
-
-    
-
+        player_ind = (player_ind+1) % N_PLAYERS
 
 def run_tests():
     b1 = Bet(6,5)
