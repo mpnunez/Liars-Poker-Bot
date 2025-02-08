@@ -73,7 +73,7 @@ def should_call(total_die, n_sides, my_die, previous_bet: Bet):
 def is_true(set_of_die, bet):
     if bet is None:
         return True
-    return False
+    return set_of_die[bet.value-1] >= bet.quantity
 
 def main():
 
@@ -84,14 +84,16 @@ def main():
     total_quantities = [sum(pd[i] for pd in player_die) for i in range(N_SIDE_PER_DICE)]
     for i in range(10):
         player_ind = i % N_PLAYERS
+        print(f"Player {player_ind} turn")
 
         if should_call(N_TOTAL_DIE,N_SIDE_PER_DICE,player_die[player_ind],last_bet):
-            winner = (i-1) % N_PLAYERS if is_true(total_quantities,last_bet) else i
+            print("Calling")
+            print(f"Actual counts: {total_quantities}")
+            winner = (player_ind-1) % N_PLAYERS if is_true(total_quantities,last_bet) else player_ind
             print(f"Player {winner} wins!")
             return
 
         last_bet = get_bet_next_highest(N_INITIAL_DICE,N_SIDE_PER_DICE,player_die[player_ind],last_bet)
-        print(player_ind)
         print(player_die[player_ind])
         print(last_bet)
 
@@ -114,6 +116,10 @@ def run_tests():
 
     orig_bet = Bet(1,0)
     assert len(list(orig_bet.increasing_bets(6,12))) == 72
+
+    assert(is_true([1,0,0,0,0,0], Bet(1,1)))
+
+    assert(not is_true([0,0,0,0,0,1], Bet(1,1)))
 
 if __name__ == "__main__":
     run_tests()
