@@ -37,17 +37,22 @@ def roll_dice(n_dice, n_sides):
     return count_for_num
 
 def exactly_n_rolls(n_die, n_sides, n):
+    if n > n_die:
+        return 0
     return np.pow(1/n_sides,n) * np.pow( (n_sides-1)/n_sides, n_die-n ) * math.comb(n_die, n)
 
 def at_least_n_rolls(n_die, n_sides, n):
+    if n > n_die:
+        return 0
     return sum( exactly_n_rolls(n_die, n_sides, i) for i in range(n,n_die+1) )
 
 def chance_correct(total_die, n_sides, known_quantities, bet):
     n_die_known = sum(known_quantities)
     n_die_unknown = total_die - n_die_known
-    p = 0
-
-    return 0
+    n_matches_needed = bet.quantity - known_quantities[bet.value-1]
+    if n_matches_needed <= 0:
+        return 1
+    return at_least_n_rolls(n_die_unknown,n_sides,n_matches_needed)
 
 
 def get_bet_next_highest(n_players, n_sides, my_die, previous_bet: Bet):
@@ -65,11 +70,6 @@ def get_bet_least_pareto_aggressive(n_players, n_sides, my_die, previous_bet: Be
     """
     return previous_bet.next_biggest_bet(n_sides)
 
-def should_call(total_die, n_sides, my_die, previous_bet: Bet):
-    if previous_bet is None:
-        return False
-    return chance_correct(total_die, n_sides, my_die, previous_bet) < 0.5
-
 def is_true(set_of_die, bet):
     if bet is None:
         return True
@@ -82,11 +82,14 @@ def main():
     last_bet = None
     player_die = [roll_dice(N_INITIAL_DICE,N_SIDE_PER_DICE) for _ in range(N_PLAYERS)]
     total_quantities = [sum(pd[i] for pd in player_die) for i in range(N_SIDE_PER_DICE)]
-    for i in range(10):
-        player_ind = i % N_PLAYERS
-        print(f"Player {player_ind} turn")
+    player_ind = 0
+    while True:
+        player_ind = (player_ind+1) % N_PLAYERS
+        print(f"\nPlayer {player_ind} turn")
 
-        if should_call(N_TOTAL_DIE,N_SIDE_PER_DICE,player_die[player_ind],last_bet):
+        prob_last_bet = chance_correct(N_TOTAL_DIE,N_SIDE_PER_DICE,player_die[player_ind],last_bet) if last_bet is not None else 1
+        print(f"Probability last bet is true: {prob_last_bet}")
+        if prob_last_bet < 0.5:
             print("Calling")
             print(f"Actual counts: {total_quantities}")
             winner = (player_ind-1) % N_PLAYERS if is_true(total_quantities,last_bet) else player_ind
@@ -95,7 +98,7 @@ def main():
 
         last_bet = get_bet_next_highest(N_INITIAL_DICE,N_SIDE_PER_DICE,player_die[player_ind],last_bet)
         print(player_die[player_ind])
-        print(last_bet)
+        print(f"Placing bet: {last_bet}")
 
     
 
