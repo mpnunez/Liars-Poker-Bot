@@ -2,6 +2,7 @@ import random
 from dataclasses import dataclass
 import numpy as np
 import math
+import itertools
 
 N_PLAYERS = 3
 N_INITIAL_DICE = 4
@@ -44,26 +45,54 @@ def at_least_n_rolls(n_die, n_sides, n):
 def chance_correct(total_die, n_sides, known_quantities, bet):
     n_die_known = sum(known_quantities)
     n_die_unknown = total_die - n_die_known
+    p = 0
+
+    return 0
 
 
 def get_bet_next_highest(n_players, n_sides, my_die, previous_bet: Bet):
     """
+    Dumbest next bet possible
+    """
+    if previous_bet is None:
+        return Bet(1,1)
+    return previous_bet.next_biggest_bet(n_sides)
+
+def get_bet_least_pareto_aggressive(n_players, n_sides, my_die, previous_bet: Bet):
+    """
     Return most probable bet higher than previous bet
     If multiple bets have same probability, use the most aggressive one
     """
-    print(f"My die are {my_die}")
     return previous_bet.next_biggest_bet(n_sides)
 
-    
+def should_call(total_die, n_sides, my_die, previous_bet: Bet):
+    if previous_bet is None:
+        return False
+    return chance_correct(total_die, n_sides, my_die, previous_bet) < 0.5
+
+def is_true(set_of_die, bet):
+    if bet is None:
+        return True
+    return False
 
 def main():
 
-    last_bet = Bet(1,0)
+    N_TOTAL_DIE = N_PLAYERS * N_INITIAL_DICE
+
+    last_bet = None
     player_die = [roll_dice(N_INITIAL_DICE,N_SIDE_PER_DICE) for _ in range(N_PLAYERS)]
+    total_quantities = [sum(pd[i] for pd in player_die) for i in range(N_SIDE_PER_DICE)]
     for i in range(10):
         player_ind = i % N_PLAYERS
+
+        if should_call(N_TOTAL_DIE,N_SIDE_PER_DICE,player_die[player_ind],last_bet):
+            winner = (i-1) % N_PLAYERS if is_true(total_quantities,last_bet) else i
+            print(f"Player {winner} wins!")
+            return
+
         last_bet = get_bet_next_highest(N_INITIAL_DICE,N_SIDE_PER_DICE,player_die[player_ind],last_bet)
         print(player_ind)
+        print(player_die[player_ind])
         print(last_bet)
 
     
